@@ -63,6 +63,7 @@ public class UserFormDataServiceImpl extends ServiceImpl<UserFormDataMapper, Use
     private final UserFormItemService userFormItemService;
     private final CacheUtils redisUtils;
     private final FormDataUtils formDataUtils;
+    private final com.tduck.cloud.form.survey.SurveyInvitationService surveyInvitations;
 
 
     @Override
@@ -74,6 +75,7 @@ public class UserFormDataServiceImpl extends ServiceImpl<UserFormDataMapper, Use
         entity.setSerialNumber(redisUtils.incr(StrUtil.format(FORM_RESULT_NUMBER, formKey), CommonConstants.ConstantNumber.ONE));
         this.save(entity);
         formDataUtils.syncSaveFormData(entity);
+        surveyInvitations.recordAnswer(entity);
         result.put("id", entity.getId());
         FormWebHookUtils.pushFormDataSaveWebHook(entity, WEBHOOK_EVENT_TYPE_FORM_DATA_ADD);
         return result;

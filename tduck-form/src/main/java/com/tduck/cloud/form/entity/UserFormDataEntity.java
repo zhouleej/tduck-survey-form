@@ -95,6 +95,10 @@ public class UserFormDataEntity extends SysBaseEntity {
      */
     private String extValue;
 
+    /** 可选邀请上下文，不作为答卷动态字段或查询权限。 */
+    @TableField(exist = false)
+    private String invitationToken;
+
 
 
 }
