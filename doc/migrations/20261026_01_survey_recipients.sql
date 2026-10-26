@@ -1,0 +1,39 @@
+-- 增量升级：不修改原问卷和答卷表；执行前备份并确认当前数据库。
+CREATE TABLE IF NOT EXISTS fm_survey_setting (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ form_key VARCHAR(64) NOT NULL,
+ mode VARCHAR(16) NOT NULL DEFAULT 'ANONYMOUS',
+ mode_locked TINYINT(1) NOT NULL DEFAULT 0,
+ default_template_id VARCHAR(64) NULL,
+ create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ UNIQUE KEY uk_survey_setting_form (form_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS fm_survey_recipient (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ form_key VARCHAR(64) NOT NULL,
+ phone VARCHAR(11) NOT NULL,
+ name VARCHAR(100) NULL,
+ company VARCHAR(200) NULL,
+ group_name VARCHAR(100) NULL,
+ remark VARCHAR(1000) NULL,
+ disabled TINYINT(1) NOT NULL DEFAULT 0,
+ create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ UNIQUE KEY uk_survey_recipient_phone (form_key, phone),
+ KEY ix_survey_recipient_group (form_key, group_name),
+ KEY ix_survey_recipient_company (form_key, company)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS fm_survey_audit (
+ id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ form_key VARCHAR(64) NULL,
+ actor_id BIGINT NULL,
+ action VARCHAR(64) NOT NULL,
+ object_id VARCHAR(64) NULL,
+ detail VARCHAR(1000) NULL,
+ create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ KEY ix_survey_audit_form (form_key, create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
