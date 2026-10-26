@@ -35,3 +35,6 @@ build/ !**/src/main/**/build/
 # Static Resources
 /tduck-api/src/main/resources/static/
 
+# Local database backups and process output
+/run/
+
