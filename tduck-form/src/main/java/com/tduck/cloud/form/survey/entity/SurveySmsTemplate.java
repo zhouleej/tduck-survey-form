@@ -1,10 +1,12 @@
 package com.tduck.cloud.form.survey.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.tduck.cloud.common.entity.BaseEntity;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.tduck.cloud.common.entity.BaseEntity;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+
 import java.time.LocalDateTime;
 
 @Data
@@ -22,6 +24,7 @@ public class SurveySmsTemplate extends BaseEntity<SurveySmsTemplate> {
     private String version;
     private String applicationState;
     private String auditJson;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime auditedAt;
 }

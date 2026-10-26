@@ -136,6 +136,10 @@ public class UserFormResultController {
     public Result createFormResult(@RequestBody UserFormDataEntity entity, HttpServletRequest request) {
         ValidatorUtils.validateEntity(entity);
         entity.setSubmitRequestIp(HttpUtils.getIpAddr(request));
+        if (StrUtil.isNotBlank(entity.getInvitationToken())) {
+            Result<Boolean> status = userFormSettingService.getUserFormWriteSettingStatus(entity.getFormKey(), entity.getSubmitRequestIp(), entity.getWxOpenId(), CommonConstants.ConstantNumber.ONE);
+            if (StrUtil.isNotBlank(status.getMsg())) return Result.failed(status.getMsg());
+        }
         // 如果已经登陆了也记录用户信息 try catch 避免抛出异常
         entity.setCreateBy(SecurityUtils.getUserId() != null ? String.valueOf(SecurityUtils.getUserId()) : null);
         Map<String, Object> result = formResultService.saveFormResult(entity);

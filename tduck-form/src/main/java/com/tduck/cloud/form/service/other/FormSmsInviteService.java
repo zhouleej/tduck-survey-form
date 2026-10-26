@@ -1,6 +1,5 @@
 package com.tduck.cloud.form.service.other;
 
-import cn.hutool.json.JSONObject;
 import com.tduck.cloud.common.exception.BaseException;
 import com.tduck.cloud.common.sms.SmsConfiguration;
 import com.tduck.cloud.common.sms.SmsService;
@@ -10,11 +9,12 @@ import com.tduck.cloud.form.entity.enums.FormStatusEnum;
 import com.tduck.cloud.form.request.FormSmsInviteRequest;
 import com.tduck.cloud.form.service.UserFormService;
 import com.tduck.cloud.form.util.FormAuthUtils;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.Map;
 
 /** 复用表单权限与现有短信发送器，不向问卷用户暴露云信凭据。 */
@@ -29,9 +29,14 @@ public class FormSmsInviteService {
         checkForm(formKey, false);
         SmsService sender = SmsConfiguration.getSmsService();
         Map<String, Object> config = new LinkedHashMap<>();
-        config.put("enabled", sender instanceof YunxinSmsServiceImpl && sender.properties.isSurveyEnabled());
-        config.put("templateId", sender instanceof YunxinSmsServiceImpl
-                ? sender.properties.getYunxinInvitationTemplateId() : null);
+        config.put(
+                "enabled",
+                sender instanceof YunxinSmsServiceImpl && sender.properties.isSurveyEnabled());
+        config.put(
+                "templateId",
+                sender instanceof YunxinSmsServiceImpl
+                        ? sender.properties.getYunxinInvitationTemplateId()
+                        : null);
         return config;
     }
 
@@ -47,7 +52,9 @@ public class FormSmsInviteService {
     private void checkForm(String formKey, boolean requireReleased) {
         FormAuthUtils.hasPermission(formKey);
         UserFormEntity form = userFormService.getByKey(formKey);
-        if (form == null || Boolean.TRUE.equals(form.getDeleted()) || Boolean.TRUE.equals(form.getFolder())) {
+        if (form == null
+                || Boolean.TRUE.equals(form.getDeleted())
+                || Boolean.TRUE.equals(form.getFolder())) {
             throw new BaseException("问卷不存在或已删除");
         }
         if (requireReleased && form.getStatus() != FormStatusEnum.RELEASE) {

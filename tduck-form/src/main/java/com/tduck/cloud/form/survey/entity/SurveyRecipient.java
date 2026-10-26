@@ -2,6 +2,7 @@ package com.tduck.cloud.form.survey.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.tduck.cloud.common.entity.BaseEntity;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

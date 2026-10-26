@@ -1,6 +1,9 @@
 package com.tduck.cloud.form.survey;
-import lombok.Data;
+
 import com.fasterxml.jackson.annotation.JsonFormat;
+
+import lombok.Data;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -17,8 +20,11 @@ public class SurveyBatchRequest {
     private String participation;
     private String requestKey;
     private String expectedTemplateVersion;
+    private String expectedSelectionHash;
+    @com.fasterxml.jackson.annotation.JsonIgnore private String legacyIntentHash;
     private boolean coverageAccepted;
     private boolean untrackedAccepted;
-    @JsonFormat(pattern="yyyy-MM-dd HH:mm:ss")
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime scheduledAt;
 }

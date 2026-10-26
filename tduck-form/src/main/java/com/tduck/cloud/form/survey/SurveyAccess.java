@@ -8,7 +8,9 @@ import com.tduck.cloud.form.service.UserFormService;
 import com.tduck.cloud.form.survey.entity.SurveyAudit;
 import com.tduck.cloud.form.survey.mapper.SurveyAuditMapper;
 import com.tduck.cloud.form.util.FormAuthUtils;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Component;
 
 @Component
@@ -26,7 +28,11 @@ public class SurveyAccess {
     public UserFormEntity existingForm(String formKey) {
         check(formKey != null && !formKey.trim().isEmpty(), "请选择问卷");
         UserFormEntity form = forms.getByKey(formKey);
-        check(form != null && !Boolean.TRUE.equals(form.getDeleted()) && !Boolean.TRUE.equals(form.getFolder()), "问卷不存在或已删除");
+        check(
+                form != null
+                        && !Boolean.TRUE.equals(form.getDeleted())
+                        && !Boolean.TRUE.equals(form.getFolder()),
+                "问卷不存在或已删除");
         return form;
     }
 
@@ -36,12 +42,17 @@ public class SurveyAccess {
         return form;
     }
 
-    public void admin() { check(SecurityUtils.isAdmin(), "仅管理员可执行此操作"); }
+    public void admin() {
+        check(SecurityUtils.isAdmin(), "仅管理员可执行此操作");
+    }
 
     public void audit(String formKey, String action, Object objectId, String detail) {
         SurveyAudit row = new SurveyAudit();
         row.setFormKey(formKey);
-        try { row.setActorId(SecurityUtils.getUserId()); } catch (Exception ignored) { }
+        try {
+            row.setActorId(SecurityUtils.getUserId());
+        } catch (Exception ignored) {
+        }
         row.setAction(action);
         row.setObjectId(objectId == null ? null : objectId.toString());
         row.setDetail(detail);

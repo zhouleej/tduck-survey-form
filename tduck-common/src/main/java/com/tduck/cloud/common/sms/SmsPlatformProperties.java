@@ -77,6 +77,11 @@ public class SmsPlatformProperties {
     private String yunxinQuerySuccessCode = "";
     private String yunxinAuditSuccessCode = "200";
     private String yunxinUpstreamSuccessCode = "200";
+    /** 仅使用已验证的状态字典；空白的失败字典不会把陌生码误判为失败。 */
+    private String yunxinSendFailureCodes = "";
+    private String yunxinDeliveryFailureCodes = "";
+    /** DOCUMENT 或正式开放接口实测的 JX_20261026；不自动猜测字段版本。 */
+    private String yunxinReceiptProfile = "DOCUMENT";
 
 
 }

@@ -97,6 +97,7 @@ public class UserFormDataEntity extends SysBaseEntity {
 
     /** 可选邀请上下文，不作为答卷动态字段或查询权限。 */
     @TableField(exist = false)
+    @com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY)
     private String invitationToken;
 
 

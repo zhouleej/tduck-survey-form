@@ -140,9 +140,11 @@ public abstract class FormDataBaseService {
         resultMap.put(BaseEntity.Fields.updateTime, LocalDateTimeUtil.formatNormal(result.getUpdateTime()));
         resultMap.put(BaseEntity.Fields.createTime, LocalDateTimeUtil.formatNormal(result.getCreateTime()));
         resultMap.remove(UserFormDataEntity.Fields.originalData);
+        resultMap.remove(UserFormDataEntity.Fields.invitationToken);
         processData.putAll(resultMap);
         processData.remove(SysBaseEntity.Fields.searchValue);
         processData.remove(SysBaseEntity.Fields.params);
+        processData.remove(UserFormDataEntity.Fields.invitationToken);
         return processData;
     }
 

@@ -2,19 +2,19 @@ package com.tduck.cloud.common.sms;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
+
 import com.tduck.cloud.common.exception.BaseException;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 江西移动云信 V1.5.4，复用系统短信配置与 Hutool HTTP。
- */
+/** 江西移动云信 V1.5.4，复用系统短信配置与 Hutool HTTP。 */
 public class YunxinSmsServiceImpl extends SmsService {
 
     public static final int MAX_RECIPIENTS = 100;
@@ -34,21 +34,78 @@ public class YunxinSmsServiceImpl extends SmsService {
         require(matches(properties.getYunxinExtendCode(), "[0-9]{6}"), "云信扩展码必须为 6 位数字");
         try {
             URI uri = new URI(properties.getYunxinBaseUrl());
-            require(("http".equals(uri.getScheme()) || "https".equals(uri.getScheme()))
-                    && uri.getHost() != null && uri.getUserInfo() == null
-                    && uri.getQuery() == null && uri.getFragment() == null
-                    && (StrUtil.isEmpty(uri.getPath()) || "/".equals(uri.getPath())),
+            require(
+                    ("http".equals(uri.getScheme()) || "https".equals(uri.getScheme()))
+                            && uri.getHost() != null
+                            && uri.getUserInfo() == null
+                            && uri.getQuery() == null
+                            && uri.getFragment() == null
+                            && (StrUtil.isEmpty(uri.getPath()) || "/".equals(uri.getPath())),
                     "云信网关地址只能包含 http(s) 协议、主机和端口");
         } catch (Exception e) {
             throw new BaseException("云信网关地址只能包含 http(s) 协议、主机和端口");
         }
         String path = StrUtil.blankToDefault(properties.getYunxinSendPath(), DEFAULT_SEND_PATH);
-        require(DEFAULT_SEND_PATH.equals(path) || "/prod-api/tripartite/task/send".equals(path),
+        require(
+                DEFAULT_SEND_PATH.equals(path) || "/prod-api/tripartite/task/send".equals(path),
                 "请选择文档中的云信发送接口路径");
+        require(
+                properties.getSurveySendStartHour() >= 0
+                        && properties.getSurveySendStartHour() <= 23
+                        && properties.getSurveySendEndHour() > properties.getSurveySendStartHour()
+                        && properties.getSurveySendEndHour() <= 24,
+                "本地发送时段须在0至24点内，结束时间必须晚于开始时间");
+        require(
+                properties.getSurveySendIntervalSeconds() >= 1
+                        && properties.getSurveySendIntervalSeconds() <= 60,
+                "网关请求间隔须为1至60秒");
+        if (properties.isSurveyEnabled()) {
+            try {
+                URI uri = new URI(properties.getSurveyPublicBaseUrl());
+                require(
+                        ("http".equals(uri.getScheme()) || "https".equals(uri.getScheme()))
+                                && uri.getHost() != null
+                                && uri.getUserInfo() == null
+                                && uri.getQuery() == null
+                                && uri.getFragment() == null
+                                && (StrUtil.isEmpty(uri.getPath()) || "/".equals(uri.getPath()))
+                                && !Arrays.asList("localhost", "127.0.0.1", "::1", "[::1]")
+                                        .contains(uri.getHost().toLowerCase(java.util.Locale.ROOT)),
+                        "请配置手机可访问的问卷公开根地址，不能使用回环地址");
+            } catch (Exception e) {
+                throw new BaseException("请配置手机可访问的问卷公开根地址，不能使用回环地址");
+            }
+        }
+        if (properties.isYunxinReceiptEnabled()) {
+            require(
+                    Arrays.asList("DOCUMENT", "JX_20261026")
+                            .contains(properties.getYunxinReceiptProfile()),
+                    "请选择已确认的回执字段版本");
+            if ("JX_20261026".equals(properties.getYunxinReceiptProfile())) {
+                require(
+                        "beginTime".equals(properties.getYunxinQueryStartField())
+                                && "yyyy-MM-dd HH:mm:ss"
+                                        .equals(properties.getYunxinQueryTimeFormat())
+                                && "200".equals(properties.getYunxinQuerySuccessCode()),
+                        "本次实测网关必须使用beginTime、带连字符的时间格式及成功码200");
+            }
+            require(
+                    StrUtil.isNotBlank(properties.getYunxinQuerySuccessCode()),
+                    "启用回执前必须填写已验证的任务查询成功码");
+            require(
+                    Arrays.asList("startTime", "beginTime")
+                            .contains(properties.getYunxinQueryStartField()),
+                    "请选择已验证的查询起始字段");
+            require(
+                    Arrays.asList("yyyy-MM-dd HH:mm:ss", "yyyyMMdd HH:mm:ss")
+                            .contains(properties.getYunxinQueryTimeFormat()),
+                    "请选择已验证的查询时间格式");
+        }
     }
 
     @Override
-    public boolean sendSms(String phoneNumber, String templateId, Map<String, Object> templateParams) {
+    public boolean sendSms(
+            String phoneNumber, String templateId, Map<String, Object> templateParams) {
         Map<String, Object> params = templateParams;
         // 原有验证码模块使用 code 命名，云信模板 #params_1# 对应 p1。
         if (params != null && params.size() == 1 && params.containsKey("code")) {
@@ -59,9 +116,13 @@ public class YunxinSmsServiceImpl extends SmsService {
     }
 
     /** 单次提交同一模板、同一组变量的问卷邀请；空变量表示普通模板。 */
-    public JSONObject sendBatchSms(List<String> phoneNumbers, String templateId, Map<String, Object> templateParams) {
+    public JSONObject sendBatchSms(
+            List<String> phoneNumbers, String templateId, Map<String, Object> templateParams) {
         require(StrUtil.isNotBlank(templateId), "请输入已审核通过的短信模板 ID");
-        require(phoneNumbers != null && !phoneNumbers.isEmpty() && phoneNumbers.size() <= MAX_RECIPIENTS,
+        require(
+                phoneNumbers != null
+                        && !phoneNumbers.isEmpty()
+                        && phoneNumbers.size() <= MAX_RECIPIENTS,
                 "每次请提供 1 至 100 个手机号码");
         List<String> phones = new ArrayList<>(new LinkedHashSet<>(phoneNumbers));
         for (String phone : phones) {
@@ -75,7 +136,8 @@ public class YunxinSmsServiceImpl extends SmsService {
                 Object value = entry.getValue();
                 require(value instanceof CharSequence || value instanceof Number, "云信变量值必须为文字或数字");
                 String text = value.toString();
-                require(StrUtil.isNotBlank(text) && text.codePointCount(0, text.length()) <= 20,
+                require(
+                        StrUtil.isNotBlank(text) && text.codePointCount(0, text.length()) <= 20,
                         "云信每个变量须为 1 至 20 个字符，请勿直接传入完整长链接");
                 variables.put(entry.getKey(), text);
             }
