@@ -260,4 +260,18 @@ public class YunxinSmsServiceImplTest {
         assertThrows(BaseException.class, () -> client.upstream(begin, begin.plusHours(25), 1, 10));
         assertEquals(1, calls.get());
     }
+
+    @Test
+    public void textTemplateApplicationUsesExplicitCapabilityAndTemplateType() {
+        YunxinClient client = new YunxinClient(properties);
+        assertThrows(BaseException.class, () -> client.createTextTemplate("邀请", "正文", true));
+        assertEquals(0, calls.get());
+        properties.setYunxinTemplateCreateEnabled(true);
+        client.createTextTemplate("邀请", "【测试】#params_1#", true);
+        assertEquals("/prod-api/tripartite/template/establishsms", requestPath);
+        assertEquals("8", requestBody.getStr("mouldtype"));
+        assertEquals("【测试】#params_1#", requestBody.getStr("smscontent"));
+        client.createTextTemplate("普通", "普通正文", false);
+        assertEquals("6", requestBody.getStr("mouldtype"));
+    }
 }
