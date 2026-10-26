@@ -5,6 +5,9 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tduck.cloud.envconfig.constant.ConfigConstants;
 import com.tduck.cloud.common.util.JsonUtils;
+import com.tduck.cloud.common.sms.SmsPlatformProperties;
+import com.tduck.cloud.common.sms.SmsTypeEnum;
+import com.tduck.cloud.common.sms.YunxinSmsServiceImpl;
 import com.tduck.cloud.common.util.SpringContextUtils;
 import com.tduck.cloud.envconfig.entity.SysEnvConfigEntity;
 import com.tduck.cloud.envconfig.entity.SystemInfoConfig;
@@ -73,6 +76,12 @@ public class SysEnvConfigServiceImpl extends ServiceImpl<SysEnvConfigMapper, Sys
 
     @Override
     public void saveConfig(SysEnvConfigEntity config) {
+        if (ConfigConstants.SMS_ENV_CONFIG.equals(config.getEnvKey())) {
+            SmsPlatformProperties properties = JsonUtils.mapToObj(config.getEnvValue(), SmsPlatformProperties.class);
+            if (properties != null && properties.getType() == SmsTypeEnum.YUNXIN) {
+                YunxinSmsServiceImpl.validateProperties(properties);
+            }
+        }
         SysEnvConfigEntity envConfig = getByKey(config.getEnvKey());
         if (ObjectUtil.isNull(envConfig)) {
             envConfig = new SysEnvConfigEntity();

@@ -29,7 +29,12 @@ public enum SmsTypeEnum {
     /**
      * veesing https://www.veesing.com/
      */
-    VEESING(3);
+    VEESING(3),
+
+    /**
+     * 移动云云信
+     */
+    YUNXIN(4);
 
     @EnumValue
     @JsonValue

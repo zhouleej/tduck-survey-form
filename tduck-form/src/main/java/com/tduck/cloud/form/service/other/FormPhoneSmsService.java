@@ -7,6 +7,8 @@ import cn.hutool.core.date.DateUnit;
 import cn.hutool.core.util.StrUtil;
 import com.tduck.cloud.common.constant.CommonConstants;
 import com.tduck.cloud.common.sms.SmsConfiguration;
+import com.tduck.cloud.common.sms.SmsService;
+import com.tduck.cloud.common.exception.BaseException;
 import com.tduck.cloud.form.constant.FormRedisKeyConstants;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -49,9 +51,13 @@ public class FormPhoneSmsService {
 
     @SneakyThrows
     public void sendPhoneCode(String phoneNumber) {
+        SmsService sender = SmsConfiguration.getSmsService();
+        if (sender == null || StrUtil.isBlank(sender.properties.getTemplateId())) {
+            throw new BaseException("请联系管理员配置短信验证码模板");
+        }
         Map<String, Object> params = new HashMap<>();
         params.put("code", genValidateCode(StrUtil.format(FormRedisKeyConstants.PHONE_NUMBER_CODE, phoneNumber)));
-        SmsConfiguration.getSmsService().sendSms(phoneNumber, SmsConfiguration.getSmsService().properties.getTemplateId(), params);
+        sender.sendSms(phoneNumber, sender.properties.getTemplateId(), params);
     }
 
     public Boolean checkPhoneCode(String phoneNumber, String code) {

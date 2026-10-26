@@ -18,7 +18,7 @@ import lombok.RequiredArgsConstructor;
 public class SmsConfiguration {
 
     @Getter
-    private static SmsService smsService;
+    private static volatile SmsService smsService;
 
     static {
         buildMsgSender();
@@ -26,7 +26,8 @@ public class SmsConfiguration {
 
     public static synchronized void buildMsgSender() {
         SmsPlatformProperties properties = JsonUtils.jsonToObj(SpringContextUtils.getBean(SysEnvConfigService.class).getValueByKey(ConfigConstants.SMS_ENV_CONFIG), SmsPlatformProperties.class);
-        if (ObjectUtil.isNull(properties)) {
+        if (ObjectUtil.isNull(properties) || properties.getType() == null) {
+            smsService = null;
             return;
         }
         switch (properties.getType()) {
@@ -38,6 +39,9 @@ public class SmsConfiguration {
                 break;
             case VEESING:
                 smsService = new VeesingSmsServiceImpl(properties);
+                break;
+            case YUNXIN:
+                smsService = new YunxinSmsServiceImpl(properties);
                 break;
         }
     }
