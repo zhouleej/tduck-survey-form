@@ -115,7 +115,7 @@ public class SurveyTemplateService {
     }
 
     public static boolean allCarriersApproved(SurveySmsTemplate template) {
-        JSONObject audit = JSONUtil.parseObj(template.getAuditJson());
+        JSONObject audit = JSONUtil.parseObj(template.getAuditJson() == null ? "{}" : template.getAuditJson());
         return Arrays.asList("cmcc_statu", "cucc_statu", "ctcc_statu").stream().allMatch(k -> "正常可用".equals(audit.getStr(k)));
     }
 }

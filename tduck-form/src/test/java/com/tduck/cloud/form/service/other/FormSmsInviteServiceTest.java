@@ -37,6 +37,7 @@ public class FormSmsInviteServiceTest {
     private FormSmsInviteService service;
     private FormSmsInviteRequest request;
     private YunxinSmsServiceImpl sender;
+    private com.tduck.cloud.form.survey.SurveyLegacyInviteService legacy;
 
     @Before
     public void setUp() {
@@ -58,9 +59,11 @@ public class FormSmsInviteServiceTest {
         form.setDeleted(false);
         form.setFolder(false);
         when(forms.getByKey("AbCd1234")).thenReturn(form);
-        service = new FormSmsInviteService(forms);
+        legacy = mock(com.tduck.cloud.form.survey.SurveyLegacyInviteService.class);
+        service = new FormSmsInviteService(forms, legacy);
         sender = mock(YunxinSmsServiceImpl.class);
         sender.properties = new SmsPlatformProperties();
+        sender.properties.setSurveyEnabled(true);
         sender.properties.setYunxinInvitationTemplateId("invite-template");
         sender.properties.setYunxinUserId("do-not-expose");
         ReflectionTestUtils.setField(SmsConfiguration.class, "smsService", sender);
@@ -88,13 +91,15 @@ public class FormSmsInviteServiceTest {
     }
 
     @Test
-    public void reportsAcceptanceWithTaskIdentifiersAndDistinctCount() {
-        when(sender.sendBatchSms(anyList(), anyString(), anyMap())).thenReturn(JSONUtil.parseObj("{\"taskid\":\"12\",\"msgid\":\"34\"}"));
-        Map<String, Object> result = service.send(request);
-        assertEquals("12", result.get("taskId"));
-        assertEquals("34", result.get("msgId"));
-        assertEquals(1, result.get("recipientCount"));
-        verify(sender, times(1)).sendBatchSms(request.getPhoneNumbers(), "invite-template", request.getTemplateParams());
+    public void legacyRequestDelegatesToThePersistentWorkflow() {
+        Map<String,Object> accepted = new java.util.LinkedHashMap<>();
+        accepted.put("batchId", 12L); accepted.put("recipientCount", 1); accepted.put("status", "PENDING");
+        when(legacy.create(request)).thenReturn(accepted);
+        Map<String,Object> result=service.send(request);
+        assertEquals(12L,result.get("batchId"));
+        assertEquals("PENDING",result.get("status"));
+        verify(legacy).create(request);
+        verifyNoInteractions(sender);
     }
 
     @Test

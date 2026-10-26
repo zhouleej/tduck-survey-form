@@ -26,4 +26,8 @@ public class FormSmsInviteRequest {
 
     @Size(max = 30, message = "最多支持 30 个模板变量")
     private Map<String, Object> templateParams = new LinkedHashMap<>();
+
+    /** 可选；旧客户端省略时由稳定请求摘要生成，防止重复扣费。 */
+    @Pattern(regexp = "[A-Za-z0-9_-]{8,64}", message = "幂等键须为8至64位字母数字或下划线短横线")
+    private String requestKey;
 }

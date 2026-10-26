@@ -23,12 +23,13 @@ import java.util.Map;
 public class FormSmsInviteService {
 
     private final UserFormService userFormService;
+    private final com.tduck.cloud.form.survey.SurveyLegacyInviteService legacyInvites;
 
     public Map<String, Object> getConfig(String formKey) {
         checkForm(formKey, false);
         SmsService sender = SmsConfiguration.getSmsService();
         Map<String, Object> config = new LinkedHashMap<>();
-        config.put("enabled", sender instanceof YunxinSmsServiceImpl);
+        config.put("enabled", sender instanceof YunxinSmsServiceImpl && sender.properties.isSurveyEnabled());
         config.put("templateId", sender instanceof YunxinSmsServiceImpl
                 ? sender.properties.getYunxinInvitationTemplateId() : null);
         return config;
@@ -40,13 +41,7 @@ public class FormSmsInviteService {
         if (!(sender instanceof YunxinSmsServiceImpl)) {
             throw new BaseException("请联系管理员在系统配置中启用移动云云信");
         }
-        JSONObject response = ((YunxinSmsServiceImpl) sender).sendBatchSms(
-                request.getPhoneNumbers(), request.getTemplateId(), request.getTemplateParams());
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("taskId", response.getStr("taskid"));
-        result.put("msgId", response.getStr("msgid"));
-        result.put("recipientCount", new LinkedHashSet<>(request.getPhoneNumbers()).size());
-        return result;
+        return legacyInvites.create(request);
     }
 
     private void checkForm(String formKey, boolean requireReleased) {
