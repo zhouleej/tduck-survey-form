@@ -1,18 +1,10 @@
 package com.tduck.cloud.common.sms;
 
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.crypto.digest.DigestUtil;
-import cn.hutool.http.HttpException;
-import cn.hutool.http.HttpResponse;
-import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONObject;
-import cn.hutool.json.JSONUtil;
 import com.tduck.cloud.common.exception.BaseException;
 
 import java.net.URI;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -27,14 +19,10 @@ public class YunxinSmsServiceImpl extends SmsService {
 
     public static final int MAX_RECIPIENTS = 100;
     private static final String DEFAULT_SEND_PATH = "/prod-api/tripartite/task/v2/send";
-    private static final DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("MMddHHmmss");
-    private final String sendUrl;
 
     public YunxinSmsServiceImpl(SmsPlatformProperties properties) {
         validateProperties(properties);
         this.properties = properties;
-        this.sendUrl = StrUtil.removeSuffix(properties.getYunxinBaseUrl(), "/")
-                + StrUtil.blankToDefault(properties.getYunxinSendPath(), DEFAULT_SEND_PATH);
     }
 
     /** 保存前及构建发送器时都校验，不访问网关。 */
@@ -92,46 +80,13 @@ public class YunxinSmsServiceImpl extends SmsService {
                 variables.put(entry.getKey(), text);
             }
         }
-        String timestamp = LocalDateTime.now(ZoneId.of("Asia/Shanghai")).format(TIMESTAMP_FORMAT);
-        String sign = DigestUtil.md5Hex(properties.getYunxinUserId() + properties.getYunxinAccessNumber()
-                + properties.getYunxinExtendCode() + timestamp);
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("taskid", properties.getYunxinAccessNumber() + properties.getYunxinExtendCode());
-        body.put("username", properties.getYunxinUsername());
-        body.put("templateId", templateId);
-        body.put("timestamp", timestamp);
-        List<Map<String, Object>> varData = new ArrayList<>();
-        if (!variables.isEmpty()) {
-            for (String phone : phones) {
-                Map<String, Object> item = new LinkedHashMap<>(variables);
-                item.put("phone", phone);
-                varData.add(item);
-            }
+        List<Map<String, Object>> recipients = new ArrayList<>();
+        for (String phone : phones) {
+            Map<String, Object> item = new LinkedHashMap<>(variables);
+            item.put("phone", phone);
+            recipients.add(item);
         }
-        body.put("sendnumber", variables.isEmpty() ? phones : Collections.emptyList());
-        body.put("varData", varData);
-        // 不记录手机号、正文和鉴权信息；不自动重试，避免任务重复受理和扣费。
-        try (HttpResponse response = HttpUtil.createPost(sendUrl)
-                .header("Content-Type", "application/json;charset=utf-8")
-                .header("Accept", "application/json")
-                .header("sign", sign)
-                .timeout(15000)
-                .setFollowRedirects(false)
-                .body(JSONUtil.toJsonStr(body)).execute()) {
-            require(response.isOk(), "云信响应异常（HTTP " + response.getStatus() + "），请先在云信平台核实任务状态再重试");
-            JSONObject result;
-            try {
-                result = JSONUtil.parseObj(response.body());
-            } catch (Exception e) {
-                throw new BaseException("云信返回了无效响应，请先在云信平台核实任务状态再重试");
-            }
-            String code = result.getStr("code");
-            require("0000000".equals(code), "云信未受理发送任务（错误码："
-                    + StrUtil.blankToDefault(code, "缺失") + "），请到云信平台查看原因");
-            return result;
-        } catch (HttpException e) {
-            throw new BaseException("云信请求超时或连接异常，受理状态未知，请先在云信平台核实任务状态再重试");
-        }
+        return new YunxinClient(properties).send(templateId, recipients, !variables.isEmpty());
     }
 
     private static boolean matches(String value, String pattern) {

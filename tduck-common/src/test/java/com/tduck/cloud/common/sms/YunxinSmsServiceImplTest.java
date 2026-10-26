@@ -198,4 +198,66 @@ public class YunxinSmsServiceImplTest {
     private YunxinSmsServiceImpl sender() {
         return new YunxinSmsServiceImpl(properties);
     }
+
+    @Test
+    public void distinctRecipientVariablesArePreserved() {
+        Map<String, Object> first = new LinkedHashMap<>();
+        first.put("phone", "13800138000");
+        first.put("p1", "first-token");
+        Map<String, Object> second = new LinkedHashMap<>();
+        second.put("phone", "13900139000");
+        second.put("p1", "second-token");
+        new YunxinClient(properties).send("tpl", Arrays.asList(first, second), true);
+        assertEquals("first-token", requestBody.getJSONArray("varData").getJSONObject(0).getStr("p1"));
+        assertEquals("second-token", requestBody.getJSONArray("varData").getJSONObject(1).getStr("p1"));
+    }
+
+    @Test
+    public void queryRequiresExplicitVerificationAndUsesOneConfiguredProfile() {
+        YunxinClient client = new YunxinClient(properties);
+        LocalDateTime begin = LocalDateTime.of(2026, 10, 26, 0, 0);
+        assertThrows(BaseException.class, () -> client.receipts("task", begin, begin.plusDays(1), 1, 100));
+        properties.setYunxinReceiptEnabled(true);
+        assertThrows(BaseException.class, () -> client.receipts("task", begin, begin.plusDays(1), 1, 100));
+        assertEquals(0, calls.get());
+        properties.setYunxinQuerySuccessCode("00000000");
+        properties.setYunxinQueryStartField("beginTime");
+        responseBody = "{\"code\":\"00000000\",\"data\":[]}";
+        client.receipts("task", begin, begin.plusDays(1), 2, 100);
+        assertEquals("/prod-api/tripartite/task/query", requestPath);
+        assertEquals("2026-10-26 00:00:00", requestBody.getStr("beginTime"));
+        assertFalse(requestBody.containsKey("startTime"));
+        assertEquals(Integer.valueOf(2), requestBody.getInt("pageNum"));
+        assertEquals(1, calls.get());
+    }
+
+    @Test
+    public void distinguishesExplicitRejectionFromUncertainTransportResult() {
+        status = 502;
+        YunxinGatewayException unknown = assertThrows(YunxinGatewayException.class,
+                () -> sender().sendSms("13800138000", "tpl", null));
+        assertTrue(unknown.isUncertain());
+        status = 200;
+        responseBody = "{\"code\":\"1001\",\"msg\":\"private payload\"}";
+        YunxinGatewayException rejected = assertThrows(YunxinGatewayException.class,
+                () -> sender().sendSms("13800138000", "tpl", null));
+        assertFalse(rejected.isUncertain());
+        assertEquals("1001", rejected.getProviderCode());
+        assertFalse(rejected.getMessage().contains("private"));
+        assertEquals(2, calls.get());
+    }
+
+    @Test
+    public void templateAuditUsesLowercaseIdAndUpstreamRejectsOversizedWindows() {
+        YunxinClient client = new YunxinClient(properties);
+        properties.setYunxinTemplateStatusEnabled(true);
+        responseBody = "{\"code\":200,\"data\":{\"rx_statu\":\"通过\"}}";
+        client.templateStatus("tpl");
+        assertEquals("tpl", requestBody.getStr("templateid"));
+        assertFalse(requestBody.containsKey("templateId"));
+        properties.setYunxinUpstreamEnabled(true);
+        LocalDateTime begin = LocalDateTime.of(2026, 10, 26, 0, 0);
+        assertThrows(BaseException.class, () -> client.upstream(begin, begin.plusHours(25), 1, 10));
+        assertEquals(1, calls.get());
+    }
 }

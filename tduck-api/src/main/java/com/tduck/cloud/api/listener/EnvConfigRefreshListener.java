@@ -35,7 +35,7 @@ public class EnvConfigRefreshListener {
      */
     @EventListener
     public void envConfigRefreshEvent(EnvConfigRefreshEvent event) {
-        log.debug("配置更新:{}", JsonUtils.objToJson(event.getConfig()));
+        log.debug("配置更新 key:{}", event.getConfig().getEnvKey());
         switch (event.getConfig().getEnvKey().trim()) {
             case ConfigConstants.FILE_ENV_CONFIG:
                 OssStorageFactory.build();

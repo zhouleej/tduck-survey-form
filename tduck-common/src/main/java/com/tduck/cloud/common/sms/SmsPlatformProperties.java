@@ -60,5 +60,23 @@ public class SmsPlatformProperties {
     /** 问卷邀请默认模板，与验证码模板分开 */
     private String yunxinInvitationTemplateId;
 
+    /** 调研功能及各开放能力分别启用；未经联调的能力不自动调用。 */
+    private boolean surveyEnabled;
+    private boolean yunxinTemplateCreateEnabled;
+    private boolean yunxinTemplateStatusEnabled;
+    private boolean yunxinReceiptEnabled;
+    private boolean yunxinUpstreamEnabled;
+    private String surveyPublicBaseUrl;
+    private int surveySendStartHour = 8;
+    private int surveySendEndHour = 20;
+    private int surveySendIntervalSeconds = 1;
+
+    /** 查询参数和成功码必须由管理员按正式开放接口联调结果固化。 */
+    private String yunxinQueryStartField = "startTime";
+    private String yunxinQueryTimeFormat = "yyyy-MM-dd HH:mm:ss";
+    private String yunxinQuerySuccessCode = "";
+    private String yunxinAuditSuccessCode = "200";
+    private String yunxinUpstreamSuccessCode = "200";
+
 
 }
