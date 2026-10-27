@@ -1,6 +1,6 @@
 spring:
   application:
-    name: tduck-api
+    name: mobile-survey-api
   profiles:
     active: prod
   jackson:
@@ -85,5 +85,6 @@ springdoc:
 aj:
   captcha:
     enable: false
-    water-mark: tduck
+    water-mark: mobile-survey
     cache-type: local
+

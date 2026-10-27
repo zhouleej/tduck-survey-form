@@ -36,7 +36,9 @@ public class SpringDocConfig {
         return new Contact()
                 .email("qing@tduckapp.com")
                 .name("tduck")
-                .url("www.tduckcloud.com");
+                .url("www.example.com");
     }
 
 }
+
+
