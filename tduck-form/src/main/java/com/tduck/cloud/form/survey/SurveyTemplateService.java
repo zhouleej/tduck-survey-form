@@ -130,7 +130,6 @@ public class SurveyTemplateService {
     }
 
     public SurveySmsTemplate apply(Long id) {
-        gateway.requireEnabled();
         SurveySmsTemplate template = get(id, true);
         check(
                 template.getProviderTemplateId() == null
